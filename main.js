@@ -110,7 +110,7 @@ async function waitForWindowClose(xpath) {
         );
         let unitXPath = "";
         if (unit === "minutes") unitXPath = "/html/body/ul/li[1]";
-        else if (unit === "hours") unitXPath = "/html/body/ul/li[2]";
+        else if (unit === "hours" || unit === "hour") unitXPath = "/html/body/ul/li[2]";
         else if (unit === "days" || unit === "day") unitXPath = "/html/body/ul/li[3]";
         if (dropdownClicked && unitXPath) {
             const unitElement = getElementByXPath(unitXPath);
