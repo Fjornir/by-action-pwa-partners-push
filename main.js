@@ -82,12 +82,12 @@ async function waitForWindowClose(xpath) {
         
         // Выбрать тип пуша
         await selectDropdown(
-            "/html/body/main/section/div[4]/div/div/div/div/form/div[1]/div[1]/div[1]/div[1]/div/button"
+            "/html/body/div/div/div/div/form/div[1]/div[1]/div[1]/div[1]/div/button"
         );
         let typeXPath = "";
-        if (pushType === "install") typeXPath = "/html/body/ul/li[1]";
-        else if (pushType === "reg") typeXPath = "/html/body/ul/li[2]";
-        else if (pushType === "dep") typeXPath = "/html/body/ul/li[3]";
+        if (pushType === "install") typeXPath = "/html/body/div/div/div/div/form/div[1]/div[1]/div[1]/div[1]/div/ul/li[1]";
+        else if (pushType === "reg") typeXPath = "/html/body/div/div/div/div/form/div[1]/div[1]/div[1]/div[1]/div/ul/li[2]";
+        else if (pushType === "dep") typeXPath = "/html/body/div/div/div/div/form/div[1]/div[1]/div[1]/div[1]/div/ul/li[3]";
         if (typeXPath) {
             const typeElement = getElementByXPath(typeXPath);
             if (typeElement) {
@@ -100,18 +100,18 @@ async function waitForWindowClose(xpath) {
 
         // Разобрать значение задержки
         const [value, unit] = delays[i].split(" ");
-        const delayInput = getElementByXPath("/html/body/main/section/div[4]/div/div/div/div/form/div[1]/div[1]/div[2]/div[1]/input");
+        const delayInput = getElementByXPath("/html/body/div/div/div/div/form/div[1]/div[1]/div[2]/div[1]/input");
         delayInput.value = value;
         delayInput.dispatchEvent(new Event("input", { bubbles: true }));
 
         // Открыть дропдаун и выбрать нужную единицу
         const dropdownClicked = await selectDropdown(
-            "/html/body/main/section/div[4]/div/div/div/div/form/div[1]/div[1]/div[2]/div[2]/div/button"
+            "/html/body/div[2]/div/div/div/form/div[1]/div[1]/div[2]/div[2]/div"
         );
         let unitXPath = "";
-        if (unit === "minutes") unitXPath = "/html/body/ul/li[1]";
-        else if (unit === "hours" || unit === "hour") unitXPath = "/html/body/ul/li[2]";
-        else if (unit === "days" || unit === "day") unitXPath = "/html/body/ul/li[3]";
+        if (unit === "minutes") unitXPath = "/html/body/div/div/div/div/form/div[1]/div[1]/div[2]/div[2]/div/ul/li[1]";
+        else if (unit === "hours" || unit === "hour") unitXPath = "/html/body/div/div/div/div/form/div[1]/div[1]/div[2]/div[2]/div/ul/li[2]";
+        else if (unit === "days" || unit === "day") unitXPath = "/html/body/div/div/div/div/form/div[1]/div[1]/div[2]/div[2]/div/ul/li[3]";
         if (dropdownClicked && unitXPath) {
             const unitElement = getElementByXPath(unitXPath);
             if (unitElement) {
@@ -124,17 +124,17 @@ async function waitForWindowClose(xpath) {
         await wait(300);
 
         // Заголовок
-        const titleField = getElementByXPath("/html/body/main/section/div[4]/div/div/div/div/form/div[2]/div[1]/div[1]/textarea");
+        const titleField = getElementByXPath("/html/body/div/div/div/div/form/div[2]/div[1]/div[1]/textarea");
         titleField.value = titles[i];
         titleField.dispatchEvent(new Event("input", { bubbles: true }));
 
         // Тело
-        const bodyField = getElementByXPath("/html/body/main/section/div[4]/div/div/div/div/form/div[2]/div[1]/div[2]/textarea");
+        const bodyField = getElementByXPath("/html/body/div/div/div/div/form/div[2]/div[1]/div[2]/textarea");
         bodyField.value = bodies[i];
         bodyField.dispatchEvent(new Event("input", { bubbles: true }));
 
         // Нажать \"Добавить пуш\" (в форме)
-        const addPushButton = getElementByXPath("/html/body/main/section/div[4]/div/div/div/div/form/div[1]/div[3]/div/button");
+        const addPushButton = getElementByXPath("/html/body/div/div/div/div/form/div[1]/div[3]/div/button");
         if (addPushButton) {
             addPushButton.click();
             await wait(500);
