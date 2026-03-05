@@ -134,7 +134,7 @@ async function waitForWindowClose(xpath) {
         bodyField.dispatchEvent(new Event("input", { bubbles: true }));
 
         // Нажать \"Добавить пуш\" (в форме)
-        const addPushButton = getElementByXPath("/html/body/div/div/div/div/form/div[1]/div[3]/div/button");
+        const addPushButton = getElementByXPath("/html/body/div[2]/div/div/div/form/div[1]/div[3]/div/div/button");
         if (addPushButton) {
             addPushButton.click();
             await wait(500);
