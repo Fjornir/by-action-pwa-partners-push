@@ -4,6 +4,7 @@ const defaultTitles = [];
 const defaultBodies = [];
 
 let pushType = "install"; // install, reg, dep
+let imageBase64 = ""; // Хранение base64 изображения
 
 const pushTypeMap = {
   install: { text: "инсталла", btn: "btn-install", unitXPath: "/html/body/ul/li[1]" },
@@ -13,6 +14,91 @@ const pushTypeMap = {
 
 function escapeString(str) {
   return str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+// === ФУНКЦИИ ДЛЯ РАБОТЫ С ИЗОБРАЖЕНИЯМИ ===
+function convertImageToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function base64ToBlob(base64) {
+  const parts = base64.split(';base64,');
+  const contentType = parts[0].split(':')[1];
+  const raw = window.atob(parts[1]);
+  const rawLength = raw.length;
+  const uInt8Array = new Uint8Array(rawLength);
+  for (let i = 0; i < rawLength; ++i) {
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+  return new Blob([uInt8Array], { type: contentType });
+}
+
+function waitForElement(selector, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const element = document.querySelector(selector);
+    if (element) {
+      resolve(element);
+      return;
+    }
+    const observer = new MutationObserver((mutations, obs) => {
+      const element = document.querySelector(selector);
+      if (element) {
+        obs.disconnect();
+        resolve(element);
+      }
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(`Element ${selector} not found within ${timeout}ms`));
+    }, timeout);
+  });
+}
+
+async function uploadImage(base64Data, isFirstElement = false) {
+  const uploadButton = document.querySelector('label.push__upload-image-button[for="push_image"]');
+  if (!uploadButton) {
+    console.warn('Кнопка загрузки изображения не найдена');
+    return false;
+  }
+  
+  const fileInput = document.getElementById('push_image');
+  if (!fileInput) {
+    console.warn('Input для загрузки изображения не найден');
+    return false;
+  }
+  
+  try {
+    const blob = base64ToBlob(base64Data);
+    const file = new File([blob], 'push-image.png', { type: blob.type });
+    
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInput.files = dataTransfer.files;
+    
+    const event = new Event('change', { bubbles: true });
+    fileInput.dispatchEvent(event);
+    
+    if (isFirstElement) {
+      await waitForElement('.push__image-previews-wrap .push__image-preview', 5000);
+      console.log('✅ Изображение загружено и превью появилось');
+    } else {
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Ошибка при загрузке изображения:', error);
+    return false;
+  }
 }
 
 function getFormData() {
@@ -39,11 +125,14 @@ function getFormData() {
 function generateCode({ delays, titles, bodies }, pushType) {
   const pushTypeText = pushTypeMap[pushType].text;
   const pushTypeUnitXPath = pushTypeMap[pushType].unitXPath;
+  const imageData = imageBase64 ? `const imageBase64 = "${imageBase64}";
+` : '';
   return `// === ДАННЫЕ ДЛЯ ПУШЕЙ ===
 const delays = [${delays.map((d) => `\"${escapeString(d)}\"`).join(", ")}];
 const titles = [${titles.map((t) => `\"${escapeString(t)}\"`).join(", ")}];
 const bodies = [${bodies.map((b) => `\"${escapeString(b)}\"`).join(", ")}];
 const pushType = "${pushType}";
+${imageData}
 
 // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
 function getElementByXPath(xpath) {
@@ -64,6 +153,81 @@ async function selectDropdown(buttonXPath) {
 async function waitForWindowClose(xpath) {
     while (getElementByXPath(xpath)) {
         await wait(20);
+    }
+}
+
+function base64ToBlob(base64) {
+    const parts = base64.split(';base64,');
+    const contentType = parts[0].split(':')[1];
+    const raw = window.atob(parts[1]);
+    const rawLength = raw.length;
+    const uInt8Array = new Uint8Array(rawLength);
+    for (let i = 0; i < rawLength; ++i) {
+        uInt8Array[i] = raw.charCodeAt(i);
+    }
+    return new Blob([uInt8Array], { type: contentType });
+}
+
+function waitForElement(selector, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            resolve(element);
+            return;
+        }
+        const observer = new MutationObserver((mutations, obs) => {
+            const element = document.querySelector(selector);
+            if (element) {
+                obs.disconnect();
+                resolve(element);
+            }
+        });
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        setTimeout(() => {
+            observer.disconnect();
+            reject(new Error('Element ' + selector + ' not found within ' + timeout + 'ms'));
+        }, timeout);
+    });
+}
+
+async function uploadImage(base64Data, isFirstElement = false) {
+    const uploadButton = document.querySelector('label.push__upload-image-button[for="push_image"]');
+    if (!uploadButton) {
+        console.warn('Кнопка загрузки изображения не найдена');
+        return false;
+    }
+    
+    const fileInput = document.getElementById('push_image');
+    if (!fileInput) {
+        console.warn('Input для загрузки изображения не найден');
+        return false;
+    }
+    
+    try {
+        const blob = base64ToBlob(base64Data);
+        const file = new File([blob], 'push-image.png', { type: blob.type });
+        
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+        
+        const event = new Event('change', { bubbles: true });
+        fileInput.dispatchEvent(event);
+        
+        if (isFirstElement) {
+            await waitForElement('.push__image-previews-wrap .push__image-preview', 5000);
+            console.log('✅ Изображение загружено и превью появилось');
+        } else {
+            await wait(800);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Ошибка при загрузке изображения:', error);
+        return false;
     }
 }
 
@@ -132,6 +296,12 @@ async function waitForWindowClose(xpath) {
         const bodyField = getElementByXPath("/html/body/div/div/div/div/form/div[2]/div[1]/div[2]/textarea");
         bodyField.value = bodies[i];
         bodyField.dispatchEvent(new Event("input", { bubbles: true }));
+
+        // Загрузить изображение, если оно есть
+        if (typeof imageBase64 !== 'undefined' && imageBase64) {
+            console.log("📸 Загрузка изображения...");
+            await uploadImage(imageBase64, i === 0);
+        }
 
         // Нажать \"Добавить пуш\" (в форме)
         const addPushButton = getElementByXPath("/html/body/div[2]/div/div/div/form/div[1]/div[3]/div/div/button");
@@ -208,4 +378,60 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-dep").addEventListener("click", () => setPushType("dep"));
   // Выделить по умолчанию первую кнопку
   setPushType("install");
+
+  // === ОБРАБОТЧИКИ ДЛЯ ЗАГРУЗКИ ИЗОБРАЖЕНИЯ ===
+  const imageInput = document.getElementById("imageInput");
+  const imagePreview = document.getElementById("imagePreview");
+  const imagePreviewContainer = document.getElementById("imagePreviewContainer");
+  const imageStatus = document.getElementById("imageStatus");
+  const fileName = document.getElementById("fileName");
+  const removeImageBtn = document.getElementById("removeImageBtn");
+
+  // Обработчик выбора файла
+  imageInput.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Проверка размера файла (5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert("Размер файла превышает 5MB. Пожалуйста, выберите файл меньшего размера.");
+      imageInput.value = "";
+      return;
+    }
+
+    try {
+      // Конвертировать в base64
+      const base64 = await convertImageToBase64(file);
+      imageBase64 = base64;
+
+      // Показать превью
+      imagePreview.src = base64;
+      imagePreviewContainer.classList.remove("hidden");
+
+      // Показать статус
+      fileName.textContent = file.name;
+      imageStatus.classList.remove("hidden");
+
+      // Показать кнопку удаления
+      removeImageBtn.classList.remove("hidden");
+
+      // Обновить код
+      updateCodeBlock();
+    } catch (error) {
+      console.error("Ошибка при загрузке изображения:", error);
+      alert("Ошибка при загрузке изображения. Попробуйте другой файл.");
+    }
+  });
+
+  // Обработчик удаления изображения
+  removeImageBtn.addEventListener("click", () => {
+    imageBase64 = "";
+    imageInput.value = "";
+    imagePreview.src = "";
+    imagePreviewContainer.classList.add("hidden");
+    imageStatus.classList.add("hidden");
+    removeImageBtn.classList.add("hidden");
+    updateCodeBlock();
+  });
 });
