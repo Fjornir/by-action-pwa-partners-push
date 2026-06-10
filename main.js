@@ -156,6 +156,19 @@ async function waitForWindowClose(xpath) {
     }
 }
 
+async function waitForModalClose() {
+    if (!document.querySelector('.modal-content')) return;
+    return new Promise(resolve => {
+        const observer = new MutationObserver(() => {
+            if (!document.querySelector('.modal-content')) {
+                observer.disconnect();
+                resolve();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    });
+}
+
 function base64ToBlob(base64) {
     const parts = base64.split(';base64,');
     const contentType = parts[0].split(':')[1];
@@ -234,8 +247,8 @@ async function uploadImage(base64Data, isFirstElement = false) {
 // === ОСНОВНОЙ СКРИПТ ===
 (async function fillPushes() {
     for (let i = 0; i < delays.length; i++) {
-        // Ждать закрытия окна перед добавлением нового пуша
-        await waitForWindowClose("/html/body/main/section/div[4]/div/div");
+        // Ждать закрытия модального окна перед добавлением нового пуша
+        await waitForModalClose();
 
         console.log("🟢 Заполнение пуша " + (i + 1));
 
@@ -313,11 +326,9 @@ async function uploadImage(base64Data, isFirstElement = false) {
             console.warn("⚠️ Не найдена кнопка 'Добавить пуш'");
         }
 
-        // Ждать закрытия окна после добавления пуша
-        await waitForWindowClose("/html/body/main/section/div[4]/div/div");
-        await wait(100);
-
-        await wait(1000); // Пауза перед следующим пушем
+        // Ждать пока модальное окно уйдёт из DOM
+        await waitForModalClose();
+        await wait(300);
     }
 
     console.log("🎉 Все пуши заполнены и добавлены.");
